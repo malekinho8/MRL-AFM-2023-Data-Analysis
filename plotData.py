@@ -13,7 +13,7 @@ plt.rc('font', family='serif')
 
 # define a click argument for the input file name, add optional argument for file directory
 @click.command()
-@click.argument('filename', type=click.Path(exists=True))
+@click.argument('filename', type=click.Path(exists=True), help='The name of the data log file to plot')
 @click.option('--directory', '-d', default='~Dropbox (MIT)/Qatar 3D Printing/LabVIEW Files (Malek)/2023-Qatar-3D-Printing/afm-data-logs/', help='Directory where the data is stored')
 
 def main(filename,directory):
