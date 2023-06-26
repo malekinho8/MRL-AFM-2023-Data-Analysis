@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import click
 import os
+import pyperclip
 
 # use latex for font rendering
 plt.rc('text', usetex=True)
@@ -17,19 +18,25 @@ loop_delay = 10 # ms
 
 # define a click argument for the input file name, add optional argument for file directory
 @click.command()
-@click.argument('filename')
-@click.option('--scale_factor', '-s', default=1.0, help='Scale factor for the data plots y-axis scaling.')
+@click.option('--use-clipboard-for-filename', '-c', default=True, help='Use the clipboard for the filename.')
+@click.option('--scale_factor', '-s', default=1.25, help='Scale factor for the data plots y-axis scaling.')
 @click.option('--directory', '-d', default='~/Dropbox (MIT)/Qatar 3D Printing/LabVIEW Files (Malek)/2023-Qatar-3D-Printing/afm-data-logs/', help='Directory where the data is stored')
-@click.option('--time-units', '-t', default='min', help='Time units for the x-axis of the plots. Options are min, sec, and ms.')
+@click.option('--time-units', '-t', default='min', help='Time units for the x-axis of the plots. Options are min, s, and ms.')
 
-def main(filename,scale_factor,directory,time_units):
+def main(use_clipboard_for_filename,scale_factor,directory,time_units):
     """
-    Plots the data from the AFM data log CSV file specified by filename. The data log file should be a CSV file with the following format:
+    Plots the data from the AFM data log CSV file specified by the filename in the user's clipboard. The data log file should be a CSV file with the following format:
         
         data-log-[13-34-28]
     
     The .csv will be appended automatically.
     """
+    if use_clipboard_for_filename:
+        # get the filename from the clipboard
+        filename = pyperclip.paste()
+    else:
+        input('Please Paste your filename here: ')
+    
     # make the direcrory path absolute
     directory = os.path.expanduser(directory)
 
@@ -52,7 +59,7 @@ def plot_data(fullfile, scale_factor,time_units):
     if time_units == 'min':
         time_label = 'Time (min)'
         div_factor = 60
-    elif time_units == 'sec':
+    elif time_units == 's':
         time_label = 'Time (s)'
         div_factor = 1
     elif time_units == 'ms':
@@ -103,7 +110,7 @@ def plot_data(fullfile, scale_factor,time_units):
     data3 = df.iloc[:,2].tolist()
     data4 = df.iloc[:,3].tolist()
     error_data = header3_values[0] - np.array(df.iloc[:,4].tolist())
-    data6 = df.iloc[:,5].tolist()
+    data6 = np.array(df.iloc[:,5].tolist())
 
     # create the plot title string. It should include the P, I, D parameter values in scientific notation, the LPS, Size X, and Size Y values, and the Z Set Point, Offset X, and Offset Y values
     title_string = '$K_P$ = {:.1e}, $K_I$ = {:.1e}, $K_D$ = {:.1e}, $LPS$ = {:.2f}, $L_X$ = {:d}~$\\mu m$, $L_Y$ = {:d}~$\\mu m$, $r(t)$ = {:.2f} V, $\\delta_X$ = {:.1f}~$\\mu m$, $\\delta_Y$ = {:.1f}'.format(
@@ -140,21 +147,21 @@ def plot_data(fullfile, scale_factor,time_units):
     ax[0,1].plot(time, data4, label='OBD X')
     ax[0,1].set_xlabel(time_label)
     ax[0,1].set_ylabel('OBD X (V)')
-    ax[0,1].set_ylim([-10*scale_factor,10*scale_factor])
+    ax[0,1].set_ylim([-data6.max()*scale_factor,data6.max()*scale_factor])
     ax[0,1].legend()
 
     # plot the error data
     ax[1,1].plot(time, error_data, label='Error ($e(t) = r(t) - y(t)$)')
     ax[1,1].set_xlabel(time_label)
     ax[1,1].set_ylabel('Error ($V$)')
-    ax[1,1].set_ylim([-10*scale_factor,10*scale_factor])
+    ax[1,1].set_ylim([-data6.max()*scale_factor,data6.max()*scale_factor])
     ax[1,1].legend()
 
     # plot the OBD Sum
     ax[2,1].plot(time, data6, label='OBD Sum')
     ax[2,1].set_xlabel(time_label)
     ax[2,1].set_ylabel('OBD Sum (V)')
-    ax[2,1].set_ylim([-10*scale_factor,10*scale_factor])
+    ax[2,1].set_ylim([-data6.max()*scale_factor,data6.max()*scale_factor])
     ax[2,1].legend()
 
     # make all axes share the same x axis
