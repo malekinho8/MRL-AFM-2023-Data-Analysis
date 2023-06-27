@@ -22,8 +22,9 @@ loop_delay = 10 # ms
 @click.option('--scale_factor', '-s', default=1.25, help='Scale factor for the data plots y-axis scaling.')
 @click.option('--directory', '-d', default='~/Dropbox (MIT)/Qatar 3D Printing/LabVIEW Files (Malek)/2023-Qatar-3D-Printing/afm-data-logs/', help='Directory where the data is stored')
 @click.option('--time-units', '-t', default='min', help='Time units for the x-axis of the plots. Options are min, s, and ms.')
+@click.option('--vs-distance', '-v', default=False, help='Plot the Z Command vs. X Command data instead of vs. time (default).')
 
-def main(use_clipboard_for_filename,scale_factor,directory,time_units):
+def main(use_clipboard_for_filename,scale_factor,directory,time_units,vs_distance):
     """
     Plots the data from the AFM data log CSV file specified by the filename in the user's clipboard. The data log file should be a CSV file with the following format:
         
@@ -52,9 +53,9 @@ def main(use_clipboard_for_filename,scale_factor,directory,time_units):
         exit()
     
     # use a custom plot function to plot the data
-    plot_data(fullfile,scale_factor,time_units)
+    plot_data(fullfile,scale_factor,time_units,vs_distance)
 
-def plot_data(fullfile, scale_factor,time_units):
+def plot_data(fullfile, scale_factor,time_units,vs_distance):
     # maek the time axis unit label
     if time_units == 'min':
         time_label = 'Time (min)'
@@ -137,8 +138,15 @@ def plot_data(fullfile, scale_factor,time_units):
     ax[1,0].legend()
 
     # plot the Z Command
-    ax[2,0].plot(time, data3, label='Z Command')
-    ax[2,0].set_xlabel(time_label)
+    if vs_distance:
+        z_xlabel = 'Distance ($\mu m$)'
+        z_xdata = data
+    else:
+        z_xlabel = time_label
+        z_xdata = time
+
+    ax[2,0].plot(z_xdata, data3, label='Z Command')
+    ax[2,0].set_xlabel(z_xlabel)
     ax[2,0].set_ylabel('Z Command ($\mu m$)')
     ax[2,0].set_ylim([-50,50])
     ax[2,0].legend()
@@ -165,12 +173,13 @@ def plot_data(fullfile, scale_factor,time_units):
     ax[2,1].legend()
 
     # make all axes share the same x axis
-    for i in range(3):
-        for j in range(2):
-            ax[i,j].sharex(ax[0,0])
+    if not vs_distance:
+        for i in range(3):
+            for j in range(2):
+                ax[i,j].sharex(ax[0,0])
 
-    # set the x axis limits
-    ax[0,0].set_xlim([time.min(), time.max()])
+        # set the x axis limits
+        ax[0,0].set_xlim([time.min(), time.max()])
 
     # turn the grid on for all plots
     for i in range(3):
@@ -197,7 +206,8 @@ def plot_data(fullfile, scale_factor,time_units):
 
     # save the figure to the same directory as the data file, with the same name, but replace the .csv extension with .png and replace data-log with plot-analysis
     time_tag = time_label.split('(')[1].split(')')[0]
-    outname = filename.replace('.csv', '.png').replace('data-log', f'plot-analysis-[{time_tag}]')
+    vs_flag = '[vs-d]' if vs_distance else '[vs-t]'
+    outname = filename.replace('.csv', '.png').replace('data-log', f'plot-analysis-[{time_tag}]-{vs_flag}')
 
     # specify save file
     output_file = os.path.join(output_dir, outname)
