@@ -2,9 +2,36 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-import click
+import librosa as lb
 import os
-import pyperclip
+from scipy.io.wavfile import write
+
+def read_afm_log_csv(filename):
+    """
+    Reads the log CSV file and returns a pandas dataframe.
+    """
+    # specify the max column length
+    max_cols = get_max_column_length(filename)
+
+    # read the data from the CSV file
+    df = pd.read_csv(filename,header=None,names=range(max_cols))
+
+    # get the header of the log dataframe
+    df_header = get_log_header_info(df)
+
+    # set the column names to be the fourth row
+    df.columns = df.iloc[3,:]
+
+    # drop the first 4 rows
+    df = df.iloc[4:]
+
+    # reset the index
+    df = df.reset_index(drop=True)
+
+    # convert the data to numeric
+    df = df.apply(pd.to_numeric)
+
+    return df, df_header
 
 def get_log_header_info(log_df):
     """
@@ -32,3 +59,107 @@ def get_experiment_info_string(df_header):
     )
 
     return title_string
+
+def get_max_column_length(log_csv_file_path):
+    # read the fourth row of the csv file, which contains the column names
+    with open(log_csv_file_path, 'r') as f:
+        # read the fourth row
+        row = f.readlines()[3]
+    
+    # split the row by commas
+    row_split = row.split(',')
+
+    # get the length of the row
+    row_length = len(row_split)
+
+    return row_length
+
+def plot_spectrogram(log_csv_file_path, signal_type, save_audio_flag, sampling_rate):
+    # read the afm log csv file
+    log_df, df_header = read_afm_log_csv(log_csv_file_path)
+
+    # get the experiment information string
+    title_string = get_experiment_info_string(df_header)
+
+    # print the column names
+    print(f'\n\n Column names: {log_df.columns}\n\n')
+
+    # Find the column index corresponding to the signal type from the column names
+    signal_type_index = log_df.columns.get_loc(signal_type)
+
+    # get the signal data according to the signal type
+    signal_data = log_df.iloc[:,signal_type_index]
+
+    # get the signal data as a numpy array
+    signal_data_np = signal_data.to_numpy()
+    
+    # if save audio flag is true, save the audio file
+    if save_audio_flag:
+        # specify the name of the audio file by getting the base name of the log csv file and appending .wav and incorporating the signal type into the name by using the signal type index value
+        audio_file_name = os.path.basename(log_csv_file_path).split('.')[0] + '-' + f'[signalColumn-{signal_type_index}]' + '.wav'
+
+        # get the directory of the log csv file
+        directory = os.path.dirname(log_csv_file_path)
+
+        # specify the audio file path using the directory and the audio file name
+        audio_file_path = os.path.join(directory, audio_file_name)
+
+        # write the audio file
+        write(audio_file_path, sampling_rate, signal_data_np)
+
+        # print sucess message
+        print(f'\n\n Audio file {audio_file_name} saved successfully at {directory}!\n\n')
+
+    # plot the spectrogram
+    mel_spectrogram = signal2mel(signal_data_np,sampling_rate,plot_flag=True, n_mels=256)
+
+
+def signal2mel(signal: np.ndarray, sample_rate: int, plot_flag=False, window_size=2048, zero_padding_factor=1,
+             window_type='hann', gain_db=0.0, range_db=80.0, high_boost_db=0.0, f_min=0, f_max=20000, n_mels=1024):
+    """
+    Convert a signal to a mel-scaled spectrogram.
+
+    Args:
+        signal (np.ndarray): The input signal as a NumPy array.
+        sample_rate (int): The sample rate of the input signal.
+        plot_flag (bool, optional): Whether to plot the mel-scaled spectrogram. Defaults to False.
+        window_size (int, optional): The size of the FFT window to use. Defaults to 2048.
+        zero_padding_factor (int, optional): The amount of zero-padding to use in the FFT. Defaults to 1.
+        window_type (str, optional): The type of window function to use in the FFT. Defaults to 'hann'.
+        gain_db (float, optional): The gain to apply to the audio signal in decibels. Defaults to 0.0.
+        range_db (float, optional): The range of the mel-scaled spectrogram in decibels. Defaults to 80.0.
+        high_boost_db (float, optional): The amount of high-frequency boost to apply to the mel-scaled spectrogram in decibels. Defaults to 0.0.
+        f_min (int, optional): The minimum frequency to include in the spectrogram (Hz). Defaults to 0.
+        f_max (int, optional): The maximum frequency to include in the spectrogram (Hz). Defaults to 20000.
+        n_mels (int, optional): The number of mel frequency bins to include in the spectrogram. Defaults to 256.
+
+    Returns:
+        np.ndarray: The mel-scaled spectrogram.
+    """
+
+    # Apply gain to the audio signal
+    signal = lb.util.normalize(signal) * lb.db_to_amplitude(gain_db)
+
+    # Compute the mel-scaled spectrogram
+    fft_size = window_size * zero_padding_factor
+    hop_length = window_size // 2
+    window = lb.filters.get_window(window_type, window_size, fftbins=True)
+    spectrogram = np.abs(lb.stft(signal, n_fft=fft_size, hop_length=hop_length, window=window))**2
+    mel_spectrogram = lb.feature.melspectrogram(S=spectrogram, sr=sample_rate, n_mels=n_mels,
+                                                 fmax=f_max, htk=True, norm=None)
+    mel_spectrogram = lb.power_to_db(mel_spectrogram, ref=np.max)
+
+    # Apply range and high boost to the mel-scaled spectrogram
+    mel_spectrogram = np.clip(mel_spectrogram, a_min=-range_db, a_max=None)
+    mel_spectrogram = mel_spectrogram + high_boost_db
+
+    # Plot the mel-scaled spectrogram if plot_flag is True
+    if plot_flag:
+        plt.figure(figsize=(10, 4))
+        lb.display.specshow(mel_spectrogram,x_axis='time', y_axis='mel', sr=sample_rate, fmin=f_min, fmax=f_max, hop_length=hop_length, cmap='jet', vmin=-range_db, vmax=mel_spectrogram.max() + high_boost_db)
+        plt.colorbar(format='%+2.0f dB')
+        plt.title('Mel spectrogram')
+        plt.tight_layout()
+        plt.show()
+
+    return mel_spectrogram

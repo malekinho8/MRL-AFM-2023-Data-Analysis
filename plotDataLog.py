@@ -15,7 +15,7 @@ plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
 
 # constant definitions
-loop_delay = 10 # ms
+LOOP_DELAY = 10 # ms
 
 # define a click argument for the input file name, add optional argument for file directory
 @click.command()
@@ -68,8 +68,11 @@ def plot_data(fullfile, scale_factor,time_units,vs_distance):
         time_label = 'Time (ms)'
         div_factor = 1/1000
 
+    # get max column length
+    num_cols = get_max_column_length(fullfile)
+
     # read the data file
-    df = pd.read_csv(fullfile, header=None)
+    df = pd.read_csv(fullfile, header=None, names=range(num_cols))
 
     # set the header df to be the first 3 rows
     df_header = get_log_header_info(df)
@@ -90,7 +93,7 @@ def plot_data(fullfile, scale_factor,time_units,vs_distance):
     time_samples = np.arange(0,df.shape[0],1)
 
     # using loop delay, define the loop rate
-    loop_rate = 1/(loop_delay/1000)
+    loop_rate = 1/(LOOP_DELAY/1000)
 
     # using the sample rate, create the time vector
     time = time_samples/loop_rate

@@ -12,7 +12,6 @@ from utils import *
 from scipy.interpolate import interp1d
 
 # define constant
-LOOP_DELAY = 10 # in ms
 RT_CLK_FREQ = 1000 # in Hz
 
 # use latex for font rendering
@@ -23,8 +22,9 @@ plt.rc('font', family='serif')
 @click.command()
 @click.option('--use-clipboard-for-filename', '-c', default=True, help='Use the clipboard for the filename.')
 @click.option('--file-directory','-d', default='~/Dropbox (MIT)/Qatar 3D Printing/LabVIEW Files (Malek)/2023-Qatar-3D-Printing/afm-data-logs/', help='Directory where the data is stored')
+@click.option('--loop-delay', '-l', default=10, help='Loop delay in microseconds.')
 
-def main(use_clipboard_for_filename,file_directory):
+def main(use_clipboard_for_filename,file_directory,loop_delay):
     if use_clipboard_for_filename:
         # get the filename from the clipboard
         filename = pyperclip.paste()
@@ -55,13 +55,15 @@ def main(use_clipboard_for_filename,file_directory):
     x_command = df['X Command (um)'].to_numpy()
 
     # specify the sampling rate
-    sampling_rate = RT_CLK_FREQ/LOOP_DELAY
+    sampling_rate = RT_CLK_FREQ/loop_delay
+
+    print(f'Sampling rate is {sampling_rate} Hz')
 
     # specify the time vector
-    time = np.arange(0,len(scan_loop_delay))/sampling_rate
+    time = np.arange(0,len(x_command))/sampling_rate
 
     # Apply Savitzky-Golay filter
-    window_size = 51  # choose an odd number, experiment with the size
+    window_size = 11  # choose an odd number, experiment with the size
     poly_order = 3  # experiment with the order
     smoothed_x_command = savgol_filter(x_command, window_size, poly_order)
 
