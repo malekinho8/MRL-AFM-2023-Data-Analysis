@@ -20,8 +20,11 @@ plt.rc('font', family='serif')
 @click.option('--signal-type', '-s', default='X Command (um)', help='Signal type to plot. Options are X Command (um), Y Command (um), Z Command (um), OBD SUM (V), OBD X (V), OBD Y (V), and XY Scan Loop Delay (ticks).')
 @click.option('--save-audio-flag', '-a', default=False, help='Save the audio file of the signal to the current directory.')
 @click.option('--sampling-rate', '-r', default=44100, help='Sampling rate of the audio file in Hz.')
+@click.option('--spectrogram-type', '-t', default='mel', help='Type of spectrogram to plot. Options are mel or linear.')
+@click.option('--window-size', '-w', default=2048, help='Window size for the spectrogram in samples.')
+@click.option('--n-mels', '-m', default=265, help='Number of mel bins to use for the spectrogram.')
 
-def main(use_clipboard_for_filename, file_directory, signal_type, save_audio_flag, sampling_rate):
+def main(use_clipboard_for_filename, file_directory, signal_type, save_audio_flag, sampling_rate, spectrogram_type, window_size, n_mels):
     if use_clipboard_for_filename:
         # get the filename from the clipboard
         filename = pyperclip.paste()
@@ -42,8 +45,11 @@ def main(use_clipboard_for_filename, file_directory, signal_type, save_audio_fla
         print('File {} does not exist!'.format(fullfile))
         exit()
     
+    # calculate f_max based on the sampling rate
+    f_max = sampling_rate/2
+    
     # use a custom plot function to plot the spectrogram data
-    plot_spectrogram(fullfile, signal_type, save_audio_flag, sampling_rate)
+    plot_spectrogram(fullfile, signal_type, save_audio_flag, sampling_rate, f_max, spectrogram_type, window_size, n_mels)
 
 if __name__ == '__main__':
     main()

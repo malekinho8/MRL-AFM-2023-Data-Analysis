@@ -74,7 +74,7 @@ def get_max_column_length(log_csv_file_path):
 
     return row_length
 
-def plot_spectrogram(log_csv_file_path, signal_type, save_audio_flag, sampling_rate):
+def plot_spectrogram(log_csv_file_path, signal_type, save_audio_flag, sampling_rate, f_max, spectrogram_type, window_size, n_mels):
     # read the afm log csv file
     log_df, df_header = read_afm_log_csv(log_csv_file_path)
 
@@ -92,6 +92,20 @@ def plot_spectrogram(log_csv_file_path, signal_type, save_audio_flag, sampling_r
 
     # get the signal data as a numpy array
     signal_data_np = signal_data.to_numpy()
+
+    # if length of signal is less than the sample rate, repeat the signal until it is equal to the sample rate
+    if len(signal_data_np) < sampling_rate:
+        # get the number of times to repeat the signal
+        num_repeats = int(sampling_rate/len(signal_data_np))
+
+        # repeat the signal
+        signal_data_np = np.tile(signal_data_np, num_repeats)
+
+        # get the length of the signal
+        signal_length = len(signal_data_np)
+
+        # chop the signal
+        signal_data_np = signal_data_np[:sampling_rate]
     
     # if save audio flag is true, save the audio file
     if save_audio_flag:
@@ -111,11 +125,11 @@ def plot_spectrogram(log_csv_file_path, signal_type, save_audio_flag, sampling_r
         print(f'\n\n Audio file {audio_file_name} saved successfully at {directory}!\n\n')
 
     # plot the spectrogram
-    mel_spectrogram = signal2mel(signal_data_np,sampling_rate,plot_flag=True, n_mels=256)
+    spectrogram = signal2spec(signal_data_np,sampling_rate,plot_flag=True, n_mels=n_mels, f_max=f_max, spectrogram_type=spectrogram_type, window_size=window_size)
 
 
-def signal2mel(signal: np.ndarray, sample_rate: int, plot_flag=False, window_size=2048, zero_padding_factor=1,
-             window_type='hann', gain_db=0.0, range_db=80.0, high_boost_db=0.0, f_min=0, f_max=20000, n_mels=1024):
+def signal2spec(signal: np.ndarray, sample_rate: int, plot_flag=False, window_size=2048, zero_padding_factor=1,
+             window_type='hann', gain_db=0.0, range_db=80.0, high_boost_db=0.0, f_min=0, f_max=20000, n_mels=1024, spectrogram_type='mel'):
     """
     Convert a signal to a mel-scaled spectrogram.
 
@@ -145,21 +159,34 @@ def signal2mel(signal: np.ndarray, sample_rate: int, plot_flag=False, window_siz
     hop_length = window_size // 2
     window = lb.filters.get_window(window_type, window_size, fftbins=True)
     spectrogram = np.abs(lb.stft(signal, n_fft=fft_size, hop_length=hop_length, window=window))**2
-    mel_spectrogram = lb.feature.melspectrogram(S=spectrogram, sr=sample_rate, n_mels=n_mels,
-                                                 fmax=f_max, htk=True, norm=None)
-    mel_spectrogram = lb.power_to_db(mel_spectrogram, ref=np.max)
+
+    if spectrogram_type == "mel":
+        spectrogram = lb.feature.melspectrogram(S=spectrogram, sr=sample_rate, n_mels=n_mels,
+                                                    fmax=f_max, htk=True, norm=None)
+    spectrogram = lb.power_to_db(spectrogram, ref=np.max)
 
     # Apply range and high boost to the mel-scaled spectrogram
-    mel_spectrogram = np.clip(mel_spectrogram, a_min=-range_db, a_max=None)
-    mel_spectrogram = mel_spectrogram + high_boost_db
+    spectrogram = np.clip(spectrogram, a_min=-range_db, a_max=None)
+    spectrogram = spectrogram + high_boost_db
 
     # Plot the mel-scaled spectrogram if plot_flag is True
     if plot_flag:
-        plt.figure(figsize=(10, 4))
-        lb.display.specshow(mel_spectrogram,x_axis='time', y_axis='mel', sr=sample_rate, fmin=f_min, fmax=f_max, hop_length=hop_length, cmap='jet', vmin=-range_db, vmax=mel_spectrogram.max() + high_boost_db)
-        plt.colorbar(format='%+2.0f dB')
-        plt.title('Mel spectrogram')
+        # create a 2 x 1 subplot with top subplot for the signal and bottom subplot for the spectrogram
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8))
+
+        # plot the signal
+        ax1.plot(signal)
+        ax1.set_title('Signal')
+        ax1.set_xlabel('Time')
+        ax1.set_ylabel('Amplitude')
+
+        # plot the spectrogram
+        specshow = lb.display.specshow(spectrogram, x_axis='time', y_axis='mel', sr=sample_rate, fmin=f_min, fmax=f_max, hop_length=hop_length, cmap='jet', ax=ax2, vmin=-range_db, vmax=spectrogram.max() + high_boost_db)
+        
+        fig.colorbar(specshow, ax=ax2, format='%+2.0f dB')
+        ax2.set_title('Spectrogram (dB)')
+
         plt.tight_layout()
         plt.show()
 
-    return mel_spectrogram
+    return spectrogram
