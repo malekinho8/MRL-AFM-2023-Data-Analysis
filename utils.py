@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import librosa as lb
 import os
+from scipy.signal import savgol_filter, argrelextrema
 from scipy.io.wavfile import write
 
 def read_afm_log_csv(filename):
@@ -190,3 +191,28 @@ def signal2spec(signal: np.ndarray, sample_rate: int, plot_flag=False, window_si
         plt.show()
 
     return spectrogram
+
+def get_signal_period_overlay(signal, time, window_size=11, poly_order=3):
+    # Apply Savitzky-Golay filter
+    smoothed_x_command = savgol_filter(signal, window_size, poly_order)
+
+    # Now detect troughs
+    trough_indices = argrelextrema(smoothed_x_command, np.less)
+
+    # find periods
+    periods = np.diff(time[trough_indices])
+
+    # create a new array for the adjusted periods
+    adjusted_periods = np.empty_like(signal)
+
+    # assign period values to corresponding time ranges
+    for i in range(len(periods)):
+        start = trough_indices[0][i]
+        end = trough_indices[0][i+1]
+        adjusted_periods[start:end] = periods[i]
+
+    # if there are remaining indices after the last trough, assign them the last period value
+    if end < len(signal):
+        adjusted_periods[end:] = periods[-1]
+    
+    return adjusted_periods

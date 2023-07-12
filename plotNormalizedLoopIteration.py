@@ -78,6 +78,12 @@ def main(use_clipboard_for_filename,file_directory,rt_loop_delay):
     # set time to be arange of the length of the x command data
     time = np.arange(len(x_command))/fs
 
+    # get the period overlay for the x command
+    adjusted_periods = get_signal_period_overlay(x_command, time)
+
+    # get the adjusted periods for the normalized x loop iteration
+    adjusted_periods_normalized_x_loop_iteration = get_signal_period_overlay(normalized_x_loop_iteration, time)
+
     # create the subplots
     fig,ax = plt.subplots(2,2,sharex=True)
 
@@ -85,6 +91,20 @@ def main(use_clipboard_for_filename,file_directory,rt_loop_delay):
     ax[0,0].plot(time,x_command)
     ax[0,0].set_ylabel('X Command (um)')
     ax[0,0].set_title('X Command vs. Time')
+
+    ax3 = ax[0,0].twinx()
+    lns3 = ax3.plot(time, adjusted_periods, 'r', label='Period')
+    ax3.set_ylabel('Time Between Troughs (s)')
+
+    # set the minimum of the y-axis to 0
+    ax3.set_ylim(bottom=0)
+
+    # set maximum of the y-axis to 1.25 times the maximum period value
+    ax3.set_ylim(top=1.25*np.max(adjusted_periods[-len(time)//2::]))
+
+    # set the color of the right y-axis to match the line color
+    ax3.yaxis.label.set_color('red')
+    ax3.tick_params(axis='y', colors='red')
 
     # plot the y command data
     ax[0,1].plot(time,y_command)
@@ -96,6 +116,20 @@ def main(use_clipboard_for_filename,file_directory,rt_loop_delay):
     ax[1,0].set_ylabel('Normalized X Loop Iteration')
     ax[1,0].set_title('Normalized X Loop Iteration vs. Time')
     ax[1,0].set_xlabel('Time (s)')
+
+    ax4 = ax[1,0].twinx()
+    lns3 = ax4.plot(time, adjusted_periods_normalized_x_loop_iteration, 'r', label='Period')
+    ax4.set_ylabel('Time Between Troughs (s)')
+
+    # set the minimum of the y-axis to 0
+    ax4.set_ylim(bottom=0)
+
+    # set maximum of the y-axis to 1.25 times the maximum period value
+    ax4.set_ylim(top=1.25*np.max(adjusted_periods_normalized_x_loop_iteration[-len(time)//2::]))
+
+    # set the color of the right y-axis to match the line color
+    ax4.yaxis.label.set_color('red')
+    ax4.tick_params(axis='y', colors='red')
 
     # plot the normalized y loop iteration data
     ax[1,1].plot(time,normalized_y_loop_iteration)
