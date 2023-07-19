@@ -55,8 +55,8 @@ def main(use_clipboard_for_experiment_folder_name):
 
 def plot_image(topo_fullfile, error_fullfile):
     # read the data from the CSV file
-    df = pd.read_csv(topo_fullfile, sep=r'\t')
-    df_error = pd.read_csv(error_fullfile, sep=r'\t')
+    df = pd.read_csv(topo_fullfile, sep=r'\t', header=None)
+    df_error = pd.read_csv(error_fullfile, sep=r'\t', header=None)
 
     # obtain the path of the experimental log data
     directory = os.path.dirname(topo_fullfile)
@@ -80,6 +80,14 @@ def plot_image(topo_fullfile, error_fullfile):
     x_range = float(title.split('L_X$ = ')[1].split('~')[0])
     y_range = float(title.split('L_Y$ = ')[1].split('~')[0])
 
+    # get the xtick range by using the df shape
+    xtick_range = df.shape[0]
+    ytick_range = df.shape[1]
+
+    # create ticks with 10 equally spaced ticks using the xtick_range and ytick_range
+    xticks = np.linspace(0,xtick_range-1,10)
+    yticks = np.linspace(0,ytick_range-1,10)
+
     # get the experiment date string from the folder name
     experiment_time = os.path.basename(directory).split('[')[-1].split(']')[0].replace('-',':')[0:-3]
 
@@ -94,11 +102,22 @@ def plot_image(topo_fullfile, error_fullfile):
     fig.suptitle(f'AFM Image - Experiment Performed at {experiment_time}\n{title}')
 
     # Plot the topo image on the left.
-    im1 = ax1.contourf(img, cmap='plasma', levels=64)
+    im1 = ax1.imshow(img, cmap='plasma')
     ax1.set_title('Topography Image ($\mu$m)')
 
+    # Define the click event handler
+    def onclick(event):
+        if event.inaxes == ax1:
+            x, y = int(event.xdata), int(event.ydata)
+            value = img[y, x]
+            ax1.annotate(f"{value:.2f}", (x, y), color='white' if img[y, x] < 0.5 else 'black', 
+                        ha='center', va='center')
+            fig.canvas.draw()
+
     # Set ticks.
-    num_ticks = len(fig.gca().get_xticks())
+    ax1.set_xticks(xticks)
+    ax1.set_yticks(yticks)
+    num_ticks = len(fig.axes[0].get_xticks())
     # make the x and y ranges into vectors for plotting
     x_range = np.round(np.linspace(-x_range/2,x_range/2,num_ticks),2)
     y_range = np.round(np.linspace(y_range/2,-y_range/2,num_ticks),2)
@@ -113,11 +132,16 @@ def plot_image(topo_fullfile, error_fullfile):
     fig.colorbar(im1, cax=cax)
 
     # plot the error image on the right
-    im2 = ax2.imshow(img_error,cmap='plasma', origin='lower')
+    im2 = ax2.imshow(img_error,cmap='plasma')
     ax2.set_title('Error Image (V)')
+    ax2.set_xticks(xticks)
+    ax2.set_yticks(yticks)
     divider = make_axes_locatable(ax2)
     cax = divider.append_axes("right", size="5%", pad=0.05)
     fig.colorbar(im2, cax=cax)
+
+    # Connect the click event handler
+    cid = fig.canvas.mpl_connect('button_press_event', onclick)
 
     # show the plot
     plt.tight_layout()
