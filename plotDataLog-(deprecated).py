@@ -27,7 +27,7 @@ LOOP_DELAY = 10 # ms
 
 def main(use_clipboard_for_filename,scale_factor,directory,time_units,vs_distance):
     """
-    Plots the data from the AFM data log folder of the following format:
+    Plots the data from the AFM data log CSV file specified by the filename in the user's clipboard. The data log file should be a CSV file with the following format:
         
         data-log-[13-34-28]
     
@@ -35,7 +35,7 @@ def main(use_clipboard_for_filename,scale_factor,directory,time_units,vs_distanc
     """
     if use_clipboard_for_filename:
         # get the filename from the clipboard
-        folder_name = pyperclip.paste()
+        filename = pyperclip.paste()
     else:
         input('Please Paste your filename here: ')
     
@@ -43,17 +43,20 @@ def main(use_clipboard_for_filename,scale_factor,directory,time_units,vs_distanc
     directory = os.path.expanduser(directory)
 
     # add the .csv extension to the filename
-    folder_dir = os.path.join(directory,folder_name)
+    filename = filename + '.csv'
 
-    # if the folder doesn't exist, print an error message and exit
-    if not os.path.isdir(folder_dir):
-        print('Folder {} does not exist!'.format(folder_dir))
+    # make sure the filename + directory exists
+    fullfile = os.path.join(directory,filename)
+
+    # if the file doesn't exist, print an error message and exit
+    if not os.path.isfile(fullfile):
+        print('File {} does not exist!'.format(fullfile))
         exit()
     
     # use a custom plot function to plot the data
-    plot_data(folder_dir,scale_factor,time_units,vs_distance)
+    plot_data(fullfile,scale_factor,time_units,vs_distance)
 
-def plot_data(folder_dir, scale_factor,time_units,vs_distance):
+def plot_data(fullfile, scale_factor,time_units,vs_distance):
     # maek the time axis unit label
     if time_units == 'min':
         time_label = 'Time (min)'
@@ -64,13 +67,9 @@ def plot_data(folder_dir, scale_factor,time_units,vs_distance):
     elif time_units == 'ms':
         time_label = 'Time (ms)'
         div_factor = 1/1000
-    
-    # define data filenames
-    info_file = os.path.join(folder_dir,'experiment-info.csv')
-    x_file = os.path.join(folder_dir,'')
 
     # get max column length
-    num_cols = get_max_column_length(info_file)
+    num_cols = get_max_column_length(fullfile)
 
     # read the data file
     df = pd.read_csv(fullfile, header=None, names=range(num_cols))
