@@ -1,0 +1,7 @@
+numpy
+matplotlib
+click
+pandas
+pyperclip
+librosa
+scipy
