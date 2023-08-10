@@ -17,7 +17,7 @@ plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
 
 # constant definitions
-LOOP_DELAY = 1 # ms
+LOOP_DELAY = 10 # ms
 
 # define a click argument for the input file name, add optional argument for file directory
 @click.command()
@@ -26,8 +26,9 @@ LOOP_DELAY = 1 # ms
 @click.option('--directory', '-d', default='~/Dropbox (MIT)/Qatar 3D Printing/LabVIEW Files (Malek)/2023-Qatar-3D-Printing/afm-data-logs/', help='Directory where the data is stored')
 @click.option('--time-units', '-t', default='min', help='Time units for the x-axis of the plots. Options are min, s, and ms.')
 @click.option('--vs-distance', '-v', default=False, help='Plot the Z Command vs. X Command data instead of vs. time (default).')
+@click.option('--title-string', '-T', default='XY Nanocube Commands', help='Main Title string for the plots.')
 
-def main(use_clipboard_for_filename,scale_factor,directory,time_units,vs_distance):
+def main(use_clipboard_for_filename,scale_factor,directory,time_units,vs_distance,title_string):
     """
     Plots the data from the AFM data log folder of the following format:
         
@@ -52,10 +53,13 @@ def main(use_clipboard_for_filename,scale_factor,directory,time_units,vs_distanc
         print('Folder {} does not exist! Please copy folder name to clipboard.'.format(folder_dir))
         exit()
     
-    # use a custom plot function to plot the data
-    plot_data(folder_dir,scale_factor,time_units,vs_distance)
+    # create the new title string from the folder name
+    title_string += f' ({folder_name})'
 
-def plot_data(folder_dir, scale_factor,time_units,vs_distance):
+    # use a custom plot function to plot the data
+    plot_data(folder_dir,scale_factor,time_units,vs_distance,title_string)
+
+def plot_data(folder_dir, scale_factor,time_units,vs_distance,title_string):
     # maek the time axis unit label
     if time_units == 'min':
         time_label = 'Time (min)'
@@ -100,14 +104,12 @@ def plot_data(folder_dir, scale_factor,time_units,vs_distance):
     data = x_df.iloc[:, 0].tolist()
     data2 = y_df.iloc[:,0].tolist()
     # create the plot title string. It should include the P, I, D parameter values in scientific notation, the LPS, Size X, and Size Y values, and the Z Set Point, Offset X, and Offset Y values
-    title_string = 'Line Scan Commands'
 
     # create a a 3x2 plot
     fig, ax = plt.subplots(2,1,figsize=(16,6))
 
     # plot the X Command
     ax[0].plot(time, data, label='X Command')
-    ax[0].set_xlabel(time_label)
     ax[0].set_ylabel('X Command ($\mu m$)')
     ax[0].set_ylim([-50,0])
     ax[0].legend()
