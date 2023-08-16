@@ -1,0 +1,37 @@
+\documentclass[tikz,border=10pt]{standalone}
+\usetikzlibrary{shapes.geometric, positioning, arrows.meta, scopes, patterns, shadows, calc}
+\include{ez_utils}
+
+\begin{document}
+\begin{tikzpicture}[
+    startstop/.style={rectangle, rounded corners, minimum width=3cm, minimum height=1cm, text centered, draw=green, fill=green!30, drop shadow},
+    process/.style={rectangle, minimum width=3cm, minimum height=1cm, text centered, draw=black, fill=orange!30, drop shadow},
+    io/.style={trapezium, trapezium left angle=70, trapezium right angle=110, minimum width=3cm, minimum height=1cm, text centered, draw=blue, fill=blue!30, drop shadow},
+    decision/.style={diamond, minimum width=3cm, minimum height=1.5cm, text centered, draw=blue, fill=blue!30, drop shadow},
+    arrow/.style={thick,->,>=stealth, shorten >=1pt},
+]
+
+% Start block
+\node[startstop] (start) {Start};
+
+% Process of getting tick count
+\node[process, right=of start] (tick) {Read \code{Tick Count VI}};
+
+% Process of writing tick count to globalTickCount
+\node[process, right=of tick] (write) {Write to \code{globalTickCount}};
+
+% Decision to continue or stop
+\node[decision, right=of write] (decide) {Check \code{stop}};
+
+% End block
+\node[startstop, below=of decide] (end) {End};
+
+% Draw the arrows
+\draw[arrow] (start) -- (tick);
+\draw[arrow] (tick) -- (write);
+\draw[arrow] (write) -- (decide);
+\draw[arrow] (decide) -- ++(0,-2cm) -|node[anchor=south, pos=0.25] {False} (tick);
+\draw[arrow] (decide) -- node[anchor=west] {True} (end);
+
+\end{tikzpicture}
+\end{document}
