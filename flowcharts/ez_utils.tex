@@ -1,0 +1,34 @@
+\usepackage{xstring}
+
+\def\code#1{\color{olive}{\texttt{#1}}\color{black}~}
+% \def\refer#1{Fig. \ref{#1}}
+% \newcommand{\urlpath}[1]{%
+% \begin{FVerbatim}[fontsize=\scriptsize]
+% #1
+% \end{FVerbatim}%
+% }
+
+\def\comment#1{\color{olive}{\textit{\% #1}} \color{black}}
+
+\newcommand\ezeq[1]{$#1$}
+
+\newcommand\ezcolumn[3]{
+\begin{column}{#1\textwidth}
+    \vspace{#2cm}
+    #3
+\end{column}
+}
+
+% \newenvironment{myenumerate}{%
+%   \begin{enumerate}
+%     \renewcommand{\theenumii}{\arabic{enumi}.\arabic{enumii}}
+%   }
+%   {%
+%   \end{enumerate}
+% }
+
+
+\newcommand{\customenumerate}{%
+  \renewcommand{\theenumii}{\arabic{enumi}.\arabic{enumii}}
+  \renewcommand{\theenumiii}{\arabic{enumi}.\arabic{enumii}.\arabic{enumiii}}
+}

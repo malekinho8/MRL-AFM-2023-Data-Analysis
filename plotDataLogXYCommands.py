@@ -17,7 +17,7 @@ plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
 
 # constant definitions
-LOOP_DELAY = 10 # ms
+LOOP_DELAY = 1 # ms
 
 # define a click argument for the input file name, add optional argument for file directory
 @click.command()

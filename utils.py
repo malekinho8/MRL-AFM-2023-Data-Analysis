@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import librosa as lb
 import os
+import time
+import threading
 from scipy.signal import savgol_filter, argrelextrema
 from scipy.io.wavfile import write
 
@@ -216,3 +218,17 @@ def get_signal_period_overlay(signal, time, window_size=11, poly_order=3):
         adjusted_periods[end:] = periods[-1]
     
     return adjusted_periods
+
+class Timer:
+    def __init__(self, dt=0.01):
+        self.current_time = 0
+        self.dt = dt
+        self.running_event = threading.Event()
+
+    def start(self):
+        while not self.running_event.is_set():
+            time.sleep(self.dt)
+            self.current_time += self.dt
+
+    def stop(self):
+        self.running_event.set()
