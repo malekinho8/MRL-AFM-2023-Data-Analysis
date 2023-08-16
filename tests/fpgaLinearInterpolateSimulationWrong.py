@@ -20,8 +20,8 @@ def compute_end_values():
 
     while tick_count_fxp <= total_ticks:
         # Update the commands
-        x_command = np.clip(linear_interpolate(start_x_command, slope, tick_count_fxp), -64,64)
-        y_command = np.clip(linear_interpolate(start_y_command, slope, tick_count_fxp), -64,64)
+        x_command = np.clip(linear_interpolate(x_command, slope, tick_count_fxp), -64,64)
+        y_command = np.clip(linear_interpolate(y_command, slope, tick_count_fxp), -64,64)
 
         print('-----------------------------------')
         print(f'Iteration: {iteration_count}')
