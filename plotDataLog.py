@@ -67,16 +67,30 @@ def plot_data(folder_dir, scale_factor,time_units,vs_distance):
     
     # define data filenames
     info_file = os.path.join(folder_dir,'experiment-info.csv')
-    x_file = os.path.join(folder_dir,'')
+    x_file = os.path.join(folder_dir,'x-command.csv')
+    y_file = os.path.join(folder_dir,'y-command.csv')
+    z_file = os.path.join(folder_dir,'z-command.csv')
+    obdx_file = os.path.join(folder_dir,'obd-x.csv')
+    obdy_file = os.path.join(folder_dir,'obd-y.csv')
+    obdsum_file = os.path.join(folder_dir,'obd-sum.csv')
+    # loopdelay_file = os.path.join(folder_dir,'fpga-loop-delay.csv')
 
     # get max column length
     num_cols = get_max_column_length(info_file)
 
-    # read the data file
-    df = pd.read_csv(fullfile, header=None, names=range(num_cols))
+    # get the information dataframe
+    info_df = pd.read_csv(info_file)
+
+    # read the data files
+    x_df = pd.read_csv(x_file, header=None, names=range(num_cols))
+    y_df = pd.read_csv(y_file, header=None, names=range(num_cols))
+    z_df = pd.read_csv(z_file, header=None, names=range(num_cols))
+    obdx_df = pd.read_csv(obdx_file, header=None, names=range(num_cols))
+    obdy_df = pd.read_csv(obdy_file, header=None, names=range(num_cols))
+    obdsum_df = pd.read_csv(obdsum_file, header=None, names=range(num_cols))
 
     # set the header df to be the first 3 rows
-    df_header = get_log_header_info(df)
+    df_header = get_log_header_info(info_df)
 
     # set the column names to be the fourth row
     df.columns = df.iloc[3,:]
