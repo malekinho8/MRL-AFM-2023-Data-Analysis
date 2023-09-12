@@ -17,7 +17,7 @@ def read_afm_log_csv(filename):
     max_cols = get_max_column_length(filename)
 
     # read the data from the CSV file
-    df = pd.read_csv(filename,header=None,names=range(max_cols))
+    df = pd.read_csv(filename,header=None, delimiter=',')
 
     # get the header of the log dataframe
     df_header = get_log_header_info(df)
@@ -214,8 +214,11 @@ def get_signal_period_overlay(signal, time, window_size=11, poly_order=3):
         adjusted_periods[start:end] = periods[i]
 
     # if there are remaining indices after the last trough, assign them the last period value
-    if end < len(signal):
-        adjusted_periods[end:] = periods[-1]
+    if len(periods) > 0:
+        if end < len(signal):
+            adjusted_periods[end:] = periods[-1]
+    else:
+        adjusted_periods[:] = 0
     
     return adjusted_periods
 

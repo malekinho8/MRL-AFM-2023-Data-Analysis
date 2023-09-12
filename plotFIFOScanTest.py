@@ -52,7 +52,7 @@ def main(use_clipboard_for_filename,file_directory):
     df, header = read_afm_log_csv(fullfile)
 
     # get the x command data malek
-    x_command = df['X  Command (um)'].to_numpy()
+    x_command = df['X Command (um)'].to_numpy()
 
     # get the y command
     y_command = df['Y Command (um)'].to_numpy()

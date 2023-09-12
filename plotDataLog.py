@@ -79,7 +79,7 @@ def plot_data(folder_dir, scale_factor,time_units,vs_distance):
     num_cols = get_max_column_length(info_file)
 
     # get the information dataframe
-    info_df = pd.read_csv(info_file)
+    info_df = pd.read_csv(info_file, header=None)
 
     # read the data files
     x_df = pd.read_csv(x_file, header=None, names=range(num_cols))
@@ -93,19 +93,19 @@ def plot_data(folder_dir, scale_factor,time_units,vs_distance):
     df_header = get_log_header_info(info_df)
 
     # set the column names to be the fourth row
-    df.columns = df.iloc[3,:]
+    # df.columns = df.iloc[3,:]
 
-    # drop the first 4 rows
-    df = df.iloc[4:]
+    # # drop the first 4 rows
+    # df = df.iloc[4:]
 
-    # reset the index
-    df = df.reset_index(drop=True)
+    # # reset the index
+    # df = df.reset_index(drop=True)
 
-    # convert the data to numeric
-    df = df.apply(pd.to_numeric)
+    # # convert the data to numeric
+    # df = df.apply(pd.to_numeric)
 
     # specify time sample vector
-    time_samples = np.arange(0,df.shape[0],1)
+    time_samples = np.arange(0,x_df.shape[0],1)
 
     # using loop delay, define the loop rate
     loop_rate = 1/(LOOP_DELAY/1000)
@@ -117,12 +117,12 @@ def plot_data(folder_dir, scale_factor,time_units,vs_distance):
     time = time/div_factor
 
     # get the data, where the first column is the X Command, Second is Y Command, Third is Z Command, Fourth is OBD X, Fifth is OBD Y, Sixth is OBD Sum
-    data = df.iloc[:,0].tolist()
-    data2 = df.iloc[:,1].tolist()
-    data3 = df.iloc[:,2].tolist()
-    data4 = df.iloc[:,3].tolist()
-    error_data = df_header.iloc[:,5].apply(pd.to_numeric).tolist()[0] - np.array(df.iloc[:,4].tolist())
-    data6 = np.array(df.iloc[:,5].tolist())
+    data = x_df.iloc[:,0].tolist()
+    data2 = y_df.iloc[:,0].tolist()
+    data3 = z_df.iloc[:,0].tolist()
+    data4 = obdx_df.iloc[:,0].tolist()
+    data5 = obdy_df.iloc[:,0].tolist()
+    data6 = np.array(obdsum_df.iloc[:,0].tolist())
 
     # create the plot title string. It should include the P, I, D parameter values in scientific notation, the LPS, Size X, and Size Y values, and the Z Set Point, Offset X, and Offset Y values
     title_string = get_experiment_info_string(df_header)
@@ -161,21 +161,28 @@ def plot_data(folder_dir, scale_factor,time_units,vs_distance):
     # plot the OBD X
     ax[0,1].plot(time, data4, label='OBD X')
     ax[0,1].set_xlabel(time_label)
-    ax[0,1].set_ylabel('OBD X (V)')
+    ax[0,1].set_ylabel('OBD X ($V$)')
     ax[0,1].set_ylim([-data6.max()*scale_factor,data6.max()*scale_factor])
     ax[0,1].legend()
 
     # plot the error data
-    ax[1,1].plot(time, error_data, label='Error ($e(t) = r(t) - y(t)$)')
+    # ax[1,1].plot(time, error_data, label='Error ($e(t) = r(t) - y(t)$)')
+    # ax[1,1].set_xlabel(time_label)
+    # ax[1,1].set_ylabel('Error ($V$)')
+    # ax[1,1].set_ylim([-data6.max()*scale_factor,data6.max()*scale_factor])
+    # ax[1,1].legend()
+
+    # Plot the OBD Y
+    ax[1,1].plot(time, data5, label='OBD Y')
     ax[1,1].set_xlabel(time_label)
-    ax[1,1].set_ylabel('Error ($V$)')
+    ax[1,1].set_ylabel('OBD Y ($V$)')
     ax[1,1].set_ylim([-data6.max()*scale_factor,data6.max()*scale_factor])
     ax[1,1].legend()
 
     # plot the OBD Sum
     ax[2,1].plot(time, data6, label='OBD Sum')
     ax[2,1].set_xlabel(time_label)
-    ax[2,1].set_ylabel('OBD Sum (V)')
+    ax[2,1].set_ylabel('OBD Sum ($V$)')
     ax[2,1].set_ylim([-data6.max()*scale_factor,data6.max()*scale_factor])
     ax[2,1].legend()
 
@@ -206,20 +213,20 @@ def plot_data(folder_dir, scale_factor,time_units,vs_distance):
     plt.show(block=True)
 
     # specify the file name from the full file
-    filename = os.path.basename(fullfile)
+    # filename = os.path.basename(fullfile)
 
-    # specify the output directory
-    output_dir = os.path.dirname(fullfile)
+    # # specify the output directory
+    # output_dir = os.path.dirname(x_file)
 
-    # save the figure to the same directory as the data file, with the same name, but replace the .csv extension with .png and replace data-log with plot-analysis
-    time_tag = time_label.split('(')[1].split(')')[0]
-    vs_flag = '[vs-d]' if vs_distance else '[vs-t]'
-    outname = filename.replace('.csv', '.png').replace('data-log', f'plot-analysis-[{time_tag}]-{vs_flag}')
+    # # save the figure to the same directory as the data file, with the same name, but replace the .csv extension with .png and replace data-log with plot-analysis
+    # time_tag = time_label.split('(')[1].split(')')[0]
+    # vs_flag = '[vs-d]' if vs_distance else '[vs-t]'
+    # outname = filename.replace('.csv', '.png').replace('data-log', f'plot-analysis-[{time_tag}]-{vs_flag}')
 
-    # specify save file
-    output_file = os.path.join(output_dir, outname)
+    # # specify save file
+    # output_file = os.path.join(output_dir, outname)
 
-    fig.savefig(output_file, dpi=300)
+    # fig.savefig(output_file, dpi=300)
 
 if __name__ == '__main__':
     main()
