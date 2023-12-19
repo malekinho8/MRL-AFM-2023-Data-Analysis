@@ -16,8 +16,10 @@ plt.rc('font', family='serif')
 
 @click.command()
 @click.option('--use-clipboard-for-experiment-folder-name', '-c', default=True, help='Use the clipboard for the experiment folder name.')
+@click.option('--topo-low', '-l', default=None, help='The default min color value to use for the topography plots.')
+@click.option('--topo-high', '-h', default=None, help='The default max color value to use for the topography plots.')
 
-def main(use_clipboard_for_experiment_folder_name):
+def main(use_clipboard_for_experiment_folder_name, topo_low, topo_high):
     """
     Plots the data from the AFM data log CSV file specified by the filename in the user's clipboard.
             
@@ -49,11 +51,17 @@ def main(use_clipboard_for_experiment_folder_name):
     
     # make the error file name
     error_fullfile = os.path.join(directory,folder_name,'error-image.csv')
+
+    # create the topography range
+    if topo_low is None and topo_high is None:
+        topo_range = None
+    else:
+        topo_range = [topo_low, topo_high]
     
     # use a custom plot function to plot the data
-    plot_image(topo_fullfile, error_fullfile)
+    plot_image(topo_fullfile, error_fullfile, topo_range)
 
-def plot_image(topo_fullfile, error_fullfile):
+def plot_image(topo_fullfile, error_fullfile, topo_range=None):
     # read the data from the CSV file
     df = pd.read_csv(topo_fullfile, sep=r'\t', header=None)
     df_error = pd.read_csv(error_fullfile, sep=r'\t', header=None)
@@ -101,8 +109,12 @@ def plot_image(topo_fullfile, error_fullfile):
     # set the super title (don't set any axes titles)
     fig.suptitle(f'AFM Image - Experiment Performed at {experiment_time}\n{title}')
 
+    # create the topo range
+    if topo_range is None:
+        topo_range = [img.min(), img.max()]
+
     # Plot the topo image on the left.
-    im1 = ax1.imshow(img, cmap='plasma')
+    im1 = ax1.imshow(img, cmap='plasma', clim=topo_range)
     ax1.set_title('Topography Image ($\mu$m)')
 
     # Define the click event handler
