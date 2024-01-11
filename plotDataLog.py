@@ -24,8 +24,12 @@ LOOP_DELAY = 10 # ms
 @click.option('--directory', '-d', default='~/Dropbox (MIT)/Qatar 3D Printing/LabVIEW Files (Malek)/2023-Qatar-3D-Printing/afm-data-logs/', help='Directory where the data is stored')
 @click.option('--time-units', '-t', default='min', help='Time units for the x-axis of the plots. Options are min, s, and ms.')
 @click.option('--vs-distance', '-v', default=False, help='Plot the Z Command vs. X Command data instead of vs. time (default).')
+@click.option('--save', '-s', default=True, help='Save the figure to the same directory as the data files.')
+@click.option('--save-format', '-f', default='pdf', help='Save format for the figure. Options are png, pdf, and svg.')
+@click.option('--save-name', '-n', default='plot-analysis', help='Save name for the figure. The file extension will be appended automatically.')
+@click.option('--show-flag','-sh', default=False, help='Show the plot.')
 
-def main(use_clipboard_for_filename,scale_factor,directory,time_units,vs_distance):
+def main(use_clipboard_for_filename,scale_factor,directory,time_units,vs_distance,save,save_format,save_name, show_flag):
     """
     Plots the data from the AFM data log folder of the following format:
         
@@ -51,9 +55,9 @@ def main(use_clipboard_for_filename,scale_factor,directory,time_units,vs_distanc
         exit()
     
     # use a custom plot function to plot the data
-    plot_data(folder_dir,scale_factor,time_units,vs_distance)
+    plot_data(folder_dir,scale_factor,time_units,vs_distance, save, save_name, save_format, show_flag)
 
-def plot_data(folder_dir, scale_factor,time_units,vs_distance):
+def plot_data(folder_dir, scale_factor,time_units,vs_distance, save, save_name, save_format, show_flag):
     # maek the time axis unit label
     if time_units == 'min':
         time_label = 'Time (min)'
@@ -73,36 +77,32 @@ def plot_data(folder_dir, scale_factor,time_units,vs_distance):
     obdx_file = os.path.join(folder_dir,'obd-x.csv')
     obdy_file = os.path.join(folder_dir,'obd-y.csv')
     obdsum_file = os.path.join(folder_dir,'obd-sum.csv')
-    # loopdelay_file = os.path.join(folder_dir,'fpga-loop-delay.csv')
+
+    # check if the pressure file exists. If it does, then set a flag to be true
+    pressure_file = os.path.join(folder_dir,'pressure.csv')
+    pressure_flag = os.path.isfile(pressure_file)
+
+    # specify the rt time samples file
+    rt_time_samples_file = os.path.join(folder_dir,'rt-time-samples.csv')
 
     # get max column length
-    num_cols = get_max_column_length(info_file)
+    # num_cols = get_max_column_length(info_file)
 
     # get the information dataframe
     info_df = pd.read_csv(info_file, header=None)
 
     # read the data files
-    x_df = pd.read_csv(x_file, header=None, names=range(num_cols))
-    y_df = pd.read_csv(y_file, header=None, names=range(num_cols))
-    z_df = pd.read_csv(z_file, header=None, names=range(num_cols))
-    obdx_df = pd.read_csv(obdx_file, header=None, names=range(num_cols))
-    obdy_df = pd.read_csv(obdy_file, header=None, names=range(num_cols))
-    obdsum_df = pd.read_csv(obdsum_file, header=None, names=range(num_cols))
+    x_df = pd.read_csv(x_file, header=None)
+    y_df = pd.read_csv(y_file, header=None)
+    z_df = pd.read_csv(z_file, header=None)
+    obdx_df = pd.read_csv(obdx_file, header=None)
+    obdy_df = pd.read_csv(obdy_file, header=None)
+    obdsum_df = pd.read_csv(obdsum_file, header=None)
+    pressure_df = pd.read_csv(pressure_file, header=None) if pressure_flag else None
+    rt_time_samples_df = pd.read_csv(rt_time_samples_file, header=None) if pressure_flag else None
 
     # set the header df to be the first 3 rows
     df_header = get_log_header_info(info_df)
-
-    # set the column names to be the fourth row
-    # df.columns = df.iloc[3,:]
-
-    # # drop the first 4 rows
-    # df = df.iloc[4:]
-
-    # # reset the index
-    # df = df.reset_index(drop=True)
-
-    # # convert the data to numeric
-    # df = df.apply(pd.to_numeric)
 
     # specify time sample vector
     time_samples = np.arange(0,x_df.shape[0],1)
@@ -210,23 +210,76 @@ def plot_data(folder_dir, scale_factor,time_units,vs_distance):
     plt.subplots_adjust(top=0.92)
 
     # show the plot
-    plt.show(block=True)
+    if not show_flag:
+        plt.show(block=False)
+    else:
+        plt.show(block=True)
 
-    # specify the file name from the full file
-    # filename = os.path.basename(fullfile)
+    # if the pressure flag is true, then plot the pressure data as well
+    if pressure_flag:
+        # initialize a new figure with 4 rows and 1 column
+        fig2, ax2 = plt.subplots(4,1,figsize=(16,6))
 
-    # # specify the output directory
-    # output_dir = os.path.dirname(x_file)
+        # get the pressure data
+        pressure_data = pressure_df.iloc[:,0].tolist()
 
-    # # save the figure to the same directory as the data file, with the same name, but replace the .csv extension with .png and replace data-log with plot-analysis
-    # time_tag = time_label.split('(')[1].split(')')[0]
-    # vs_flag = '[vs-d]' if vs_distance else '[vs-t]'
-    # outname = filename.replace('.csv', '.png').replace('data-log', f'plot-analysis-[{time_tag}]-{vs_flag}')
+        # get the time samples based on the first/last time sample of the fpga time samples and interpolate based on the number of pressure samples
+        initial_time = time[0]
+        final_time = time[-1]
+        pressure_time_samples = np.linspace(initial_time, final_time, len(pressure_data))
 
-    # # specify save file
-    # output_file = os.path.join(output_dir, outname)
+        # in the first row plot the pressure data
+        ax2[0].plot(pressure_time_samples, pressure_data)
+        ax2[0].set_xlabel(time_label)
+        ax2[0].set_ylabel('Pressure (mbar)')
+        ax2[0].set_title(title_string)
+        ax2[0].grid(True)
 
-    # fig.savefig(output_file, dpi=300)
+        # in the second row plot the OBD Y data
+        ax2[1].plot(time, data5)
+        ax2[1].set_xlabel(time_label)
+        ax2[1].set_ylabel('OBD Y ($V$)')
+        ax2[1].grid(True)
+
+        # in the third row plot the OBD X data
+        ax2[2].plot(time, data4)
+        ax2[2].set_xlabel(time_label)
+        ax2[2].set_ylabel('OBD X ($V$)')
+        ax2[2].grid(True)
+
+        # in the fourth row plot the OBD Sum data
+        ax2[3].plot(time, data6)
+        ax2[3].set_xlabel(time_label)
+        ax2[3].set_ylabel('OBD Sum ($V$)')
+        ax2[3].grid(True)
+
+        # make all axes share the same x axis
+        for i in range(4):
+            ax2[i].sharex(ax2[0])
+
+        # show the plot
+        if not show_flag:
+            plt.show(block=False)
+        else:
+            plt.show(block=True)
+
+    if save:
+        # specify the directory to save the figure (should be the same as the data log files)
+        save_dir = folder_dir
+
+        # specify the name of the figure to save by adding the file extension
+        save_name = save_name + '.' + save_format
+
+        # save the figure using fig
+        fig.savefig(os.path.join(save_dir,save_name), format=save_format, dpi=600)
+
+        # save the pressure data if the pressure flag is true
+        if pressure_flag:
+            # specify the pressure file name
+            pressure_save_name = 'pressure.' + save_format
+
+            # save the pressure data
+            fig2.savefig(os.path.join(save_dir,pressure_save_name), format=save_format, dpi=600)
 
 if __name__ == '__main__':
     main()
