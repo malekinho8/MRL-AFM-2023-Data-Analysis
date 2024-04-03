@@ -15,7 +15,7 @@ plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
 
 # constant definitions
-LOOP_DELAY = 10 # ms
+LOOP_DELAY = 1 # ms
 
 # define a click argument for the input file name, add optional argument for file directory
 @click.command()
@@ -99,7 +99,6 @@ def plot_data(folder_dir, scale_factor,time_units,vs_distance, save, save_name, 
     obdy_df = pd.read_csv(obdy_file, header=None)
     obdsum_df = pd.read_csv(obdsum_file, header=None)
     pressure_df = pd.read_csv(pressure_file, header=None) if pressure_flag else None
-    rt_time_samples_df = pd.read_csv(rt_time_samples_file, header=None) if pressure_flag else None
 
     # set the header df to be the first 3 rows
     df_header = get_log_header_info(info_df)
