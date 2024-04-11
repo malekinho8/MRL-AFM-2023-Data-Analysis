@@ -235,3 +235,51 @@ class Timer:
 
     def stop(self):
         self.running_event.set()
+
+def get_loop_delay(metadata_path):
+    # read the metadata text file
+    with open(metadata_path, 'r') as f:
+        # read the first line
+        line = f.readline()
+    
+    # example: FIFO Record Sampling Rate (Hz): 10.000000 I want to extract the sampling rate value
+    # split the line by the colon
+    line_split = line.split(': ')
+
+    # get the loop delay value
+    loop_delay = float(line_split[1])
+
+    return loop_delay
+
+def update_distribution(dist_ax, signal_ax, x, y, *args):
+    """
+    Update the distribution plot based on the visible range of the signal plot.
+
+    Parameters:
+    - dist_ax: The Matplotlib axis object for the distribution plot.
+    - signal_ax: The Matplotlib axis object for the signal plot.
+    - x: The x data of the signal.
+    - y: The y data of the signal.
+    """
+    # Get current x-axis view limits from the signal plot
+    xlims = signal_ax.get_xlim()
+    print(f'Current x-axis view limits: {xlims}')
+    visible_y = y[(x >= xlims[0]) & (x <= xlims[1])]
+    dist_ax.cla()  # Clear the current distribution plot
+    dist_ax.hist(visible_y, orientation='horizontal', bins=50)
+    # get the mean and standard deviation of the data
+    mean, std = np.mean(visible_y), np.std(visible_y)
+    legend_string = r"$\mu = {:.2f}$, $\sigma = {:.2f}$".format(mean,std)
+    dist_ax.legend([legend_string])
+
+def update_all_distributions(signal_axes, dist_axes, time, data_sets):
+    # Assuming time and data_sets are lists or arrays of x and y data for each plot
+    for signal_ax, dist_ax, data in zip(signal_axes, dist_axes, data_sets):
+        xlims = signal_ax.get_xlim()
+        visible_y = data[(time >= xlims[0]) & (time <= xlims[1])]
+        dist_ax.cla()
+        dist_ax.hist(visible_y, orientation='horizontal', bins=50)
+
+# This function is called periodically by the animation
+def update(frame):
+    update_distribution()
